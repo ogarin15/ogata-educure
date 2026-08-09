@@ -50,7 +50,7 @@ type Id = number | string;
 
 function formatId(id: Id): string {
   if (typeof id === "number") {
-    return String(id);
+    return `N:${id}`;
   }
 
   return `S:${id}`;
