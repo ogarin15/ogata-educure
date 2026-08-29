@@ -1,76 +1,147 @@
-const blogApi = {
-  fetchPost: (id: number) =>
-    Promise.resolve({
-      id,
-      title: "記事",
-      body: "本文",
-    }),
+// PostState
 
-  fetchPostsByAuthor: (authorId: number, limit: number) =>
-    Promise.resolve(
-      [
-        { id: 1, title: "記事1" },
-        { id: 2, title: "記事2" },
-      ]
-        .slice(0, limit)
-        .map((p) => ({ ...p, authorId }))
-    ),
+type DraftPost = {
+  status: "draft";
+  title: string;
+  lastEditedAt: Date;
 };
 
-// BlogApi
-type BlogApi = typeof blogApi;
+type PublishedPost = {
+  status: "published";
+  title: string;
+  publishedAt: Date;
+  viewCount: number;
+};
 
-// FetchPostInput
-type FetchPostInput = Parameters<typeof blogApi.fetchPost>[0];
+type ArchivedPost = {
+  status: "archived";
+  title: string;
+  archivedAt: Date;
+  reason: string;
+};
 
-// FetchPostOutput
-type FetchPostOutput = Awaited<
-  ReturnType<typeof blogApi.fetchPost>
->;
+type PostState =
+  | DraftPost
+  | PublishedPost
+  | ArchivedPost;
 
-// FetchPostsArgs
-type FetchPostsArgs = Parameters<
-  typeof blogApi.fetchPostsByAuthor
->;
+// describeState
 
-// UserRole
-type UserRole = "admin" | "editor" | "viewer";
+function describeState(state: PostState): string {
+  switch (state.status) {
+    case "draft":
+      return `下書き:${state.title}(最終編集 ${state.lastEditedAt
+        .toISOString()
+        .slice(0, 10)})`;
 
-// Permissions
-type Permissions = Record<UserRole, boolean>;
+    case "published":
+      return `公開済み:${state.title}(${state.viewCount}回閲覧)`;
 
-// サンプル値
+    case "archived":
+      return `アーカイブ:${state.title}(理由:${state.reason})`;
 
-const fetchPostInput: FetchPostInput = 1;
+    default: {
+      const exhaustive: never = state;
+      return exhaustive;
+    }
+  }
+}
 
-const fetchPostsArgs: FetchPostsArgs = [42, 10];
+// TransitionResult
 
-const permissions: Permissions = {
-  admin: true,
-  editor: true,
-  viewer: false,
+type SuccessResult = {
+  ok: true;
+  newState: PublishedPost;
+};
+
+type FailureResult = {
+  ok: false;
+  reason: string;
+};
+
+type TransitionResult = SuccessResult | FailureResult;
+
+// publish
+
+function publish(
+  state: PostState,
+  publishedAt: Date
+): TransitionResult {
+  switch (state.status) {
+    case "draft":
+      return {
+        ok: true,
+        newState: {
+          status: "published",
+          title: state.title,
+          publishedAt: publishedAt,
+          viewCount: 0,
+        },
+      };
+
+    case "published":
+      return {
+        ok: false,
+        reason: "既に公開済みの記事は再公開できません",
+      };
+
+    case "archived":
+      return {
+        ok: false,
+        reason: "アーカイブ済みの記事は公開できません",
+      };
+
+    default: {
+      const exhaustive: never = state;
+      return exhaustive;
+    }
+  }
+}
+
+// サンプルデータ
+
+const draft: DraftPost = {
+  status: "draft",
+  title: "執筆中の記事",
+  lastEditedAt: new Date("2024-01-10"),
+};
+
+const published: PublishedPost = {
+  status: "published",
+  title: "公開済み記事",
+  publishedAt: new Date("2024-02-01"),
+  viewCount: 1234,
+};
+
+const archived: ArchivedPost = {
+  status: "archived",
+  title: "アーカイブ済み",
+  archivedAt: new Date("2024-03-01"),
+  reason: "古い情報のため",
 };
 
 // 動作確認
-async function main(): Promise<void> {
-  console.log("fetchPost 入力:", fetchPostInput);
 
-  const post: FetchPostOutput =
-    await blogApi.fetchPost(fetchPostInput);
+console.log(describeState(draft));
 
-  console.log("fetchPost 実行:", post);
+console.log(describeState(published));
 
-  console.log("fetchPostsByAuthor 引数:", fetchPostsArgs);
+console.log(describeState(archived));
 
-  const posts = await blogApi.fetchPostsByAuthor(
-    ...fetchPostsArgs
-  );
+const success = publish(
+  draft,
+  new Date("2024-04-01")
+);
 
-  console.log("fetchPostsByAuthor 実行:", posts);
-
-  console.log("権限マップ:", permissions);
+if (success.ok) {
+  console.log("公開成功:", success.newState);
 }
 
-main();
+const failure = publish(
+  published,
+  new Date("2024-04-01")
+);
 
-export {};
+if (!failure.ok) {
+  console.log("公開失敗:", failure.reason);
+}
