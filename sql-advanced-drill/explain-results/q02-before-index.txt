@@ -1,0 +1,6 @@
+Seq Scan on posts  (cost=0.00..207.20 rows=38 width=92) (actual time=0.016..1.053 rows=823 loops=1)
+  Filter: (user_id = 1)
+  Rows Removed by Filter: 9173
+Planning Time: 0.093 ms
+Execution Time: 1.105 ms
+(5 行)

@@ -1,0 +1,6 @@
+ Limit  (cost=0.29..67.88 rows=20 width=92) (actual time=0.082..0.111 rows=20 loops=1)
+   ->  Index Scan using idx_posts_user_pub on posts  (cost=0.29..169.28 rows=50 width=92) (actual time=0.079..0.105 rows=20 loops=1)
+         Index Cond: ((user_id = 1) AND (published_at IS NOT NULL))
+ Planning Time: 3.057 ms
+ Execution Time: 0.155 ms
+(5 行)
