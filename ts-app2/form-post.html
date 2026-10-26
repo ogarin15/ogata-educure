@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeLog - 記事投稿</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+
+    .error {
+      color: red;
+      min-height: 24px;
+    }
+
+    .result {
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 5px;
+      background: #eee;
+    }
+
+    .result.success {
+      background: #d9f7df;
+      color: green;
+    }
+
+    .result.error {
+      background: #ffe0e0;
+      color: red;
+    }
+
+    .result.loading {
+      background: #eee;
+      color: #555;
+    }
+
+    #preview {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-top: 10px;
+      min-height: 50px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #posted-view {
+      margin-top: 30px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    #posted-body {
+      border-top: 1px solid #ddd;
+      margin-top: 15px;
+      padding-top: 15px;
+    }
+  </style>
+
+</head>
+
+<body>
+  <h1>記事投稿</h1>
+
+  <form id="post-form">
+
+<label for="title">タイトル</label>
+<input id="title" type="text" autocomplete="off">
+<p id="err-title" class="error"></p>
+
+<label for="body">本文（Markdown対応）</label>
+<textarea id="body"></textarea>
+<p id="err-body" class="error"></p>
+
+<label for="category">カテゴリ</label>
+<select id="category">
+  <option value="tech">tech</option>
+  <option value="daily">daily</option>
+  <option value="review">review</option>
+  <option value="announcement">announcement</option>
+</select>
+
+<div>
+  <strong>プレビュー（リアルタイム反映）</strong>
+  <div id="preview"></div>
+</div>
+
+<button type="submit">投稿する</button>
+
+<div id="result" class="result hidden"></div>
+
+  </form>
+
+  <section id="posted-view" class="hidden">
+    <h2>投稿した記事</h2>
+
+<p>ID: <span id="posted-id"></span></p>
+<p>カテゴリ: <span id="posted-category"></span></p>
+<p>タイトル: <span id="posted-title"></span></p>
+
+<div>
+  <strong>本文（Markdown整形済み）</strong>
+  <div id="posted-body"></div>
+</div>
+
+<button id="new-post-btn" type="button">
+  続けて投稿する
+</button>
+
+  </section>
+
+  <script type="module" src="/src/typelog/main.ts"></script>
+
+</body>
+</html>
