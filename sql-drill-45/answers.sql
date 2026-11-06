@@ -1,28 +1,30 @@
+-- 問1. 全ユーザー一覧
+SELECT id, name, email, age, country, created_at
+FROM users
+ORDER BY id ASC;
+
+-- 問2. ユーザーの名前とメールだけ
+SELECT name, email
+FROM users
+ORDER BY id ASC;
+
+-- 問3. 30歳以上のユーザー
 SELECT id, name, age
 FROM users
-WHERE age IS NOT NULL
-ORDER BY age ASC;
+WHERE age >= 30
+ORDER BY age ASC, id ASC;
 
-SELECT id, name, age
-FROM users
-WHERE age IS NOT NULL
-ORDER BY age DESC, name ASC;
-
-SELECT title, view_count
-FROM posts
-WHERE published_at IS NOT NULL
-ORDER BY view_count DESC
-LIMIT 3;
-
-SELECT id, name, email, age
-FROM users
-WHERE name LIKE 'S%';
-
+-- 問4. 日本在住のユーザー
 SELECT name, age
 FROM users
-WHERE age BETWEEN 20 AND 30
-ORDER BY age ASC;
+WHERE country = 'Japan'
+ORDER BY id ASC;
 
+-- 問5. 年齢未登録のユーザー
+SELECT id, name, email, age, country, created_at
+FROM users
+WHERE age IS NULL
+ORDER BY id ASC;
 
 SELECT COUNT(*) AS total
 FROM users;
@@ -71,7 +73,6 @@ GROUP BY country
 HAVING COUNT(*) >= 2
 ORDER BY user_count DESC;
 
-
 SELECT posts.title, users.name
 FROM posts
 JOIN users ON posts.user_id = users.id
@@ -112,11 +113,16 @@ LEFT JOIN comments ON posts.id = comments.post_id
 GROUP BY posts.id, posts.title
 ORDER BY posts.id ASC;
 
-SELECT posts.title
-FROM posts
-LEFT JOIN likes ON posts.id = likes.post_id
-WHERE posts.published_at IS NOT NULL
-  AND likes.id IS NULL;
+-- 問28. いいねが1件も付いていない公開済み投稿
+SELECT p.title
+FROM posts AS p
+WHERE p.published_at IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM likes AS l
+      WHERE l.post_id = p.id
+  )
+ORDER BY p.id ASC;
 
 SELECT posts.title
 FROM posts
@@ -124,19 +130,22 @@ LEFT JOIN post_tags ON posts.id = post_tags.post_id
 WHERE posts.published_at IS NOT NULL
   AND post_tags.post_id IS NULL;
 
+-- 問30. 投稿の著者名・いいね数・コメント数
 SELECT
-    posts.title,
-    users.name,
-    COUNT(DISTINCT likes.id) AS like_count,
-    COUNT(DISTINCT comments.id) AS comment_count
-FROM posts
-JOIN users ON posts.user_id = users.id
-LEFT JOIN likes ON posts.id = likes.post_id
-LEFT JOIN comments ON posts.id = comments.post_id
-WHERE posts.published_at IS NOT NULL
-GROUP BY posts.id, posts.title, users.name
-ORDER BY like_count DESC;
-
+    p.title,
+    u.name AS author,
+    COUNT(DISTINCT l.user_id) AS like_count,
+    COUNT(DISTINCT c.id) AS comment_count
+FROM posts AS p
+JOIN users AS u
+  ON u.id = p.user_id
+LEFT JOIN likes AS l
+  ON l.post_id = p.id
+LEFT JOIN comments AS c
+  ON c.post_id = p.id
+WHERE p.published_at IS NOT NULL
+GROUP BY p.id, p.title, u.name
+ORDER BY like_count DESC, p.id ASC;
 
 SELECT title, view_count
 FROM posts
@@ -148,10 +157,16 @@ WHERE published_at IS NOT NULL
   )
 ORDER BY view_count DESC;
 
-SELECT DISTINCT users.name
-FROM users
-JOIN comments ON users.id = comments.user_id
-ORDER BY users.id ASC;
+-- 問32. コメントを書いたことのあるユーザー（名前の重複なし）
+SELECT u.name
+FROM users AS u
+WHERE EXISTS (
+    SELECT 1
+    FROM comments AS c
+    WHERE c.user_id = u.id
+)
+GROUP BY u.name
+ORDER BY MIN(u.id) ASC;
 
 SELECT users.name
 FROM users
@@ -180,7 +195,6 @@ HAVING COUNT(comments.id) > (
 )
 ORDER BY comment_count DESC;
 
-
 INSERT INTO users (name, email, age, country)
 VALUES ('Test User', 'test@example.com', 25, 'Japan')
 RETURNING id;
@@ -196,20 +210,17 @@ SET country = 'Ireland'
 WHERE email = 'dave@example.com'
 RETURNING id, name, country;
 
-
 BEGIN;
 
 DELETE FROM posts
 WHERE published_at IS NULL
 RETURNING id, title;
 
-
 BEGIN;
 
 DELETE FROM comments
 WHERE created_at < '2026-02-01'
 RETURNING id, post_id, user_id;
-
 
 WITH user_post_counts AS (
     SELECT user_id, COUNT(*) AS post_count
@@ -223,7 +234,6 @@ JOIN users ON user_post_counts.user_id = users.id
 ORDER BY user_post_counts.post_count DESC
 LIMIT 3;
 
-
 SELECT
     DATE_TRUNC('month', published_at) AS month,
     COUNT(*) AS post_count
@@ -231,7 +241,6 @@ FROM posts
 WHERE published_at IS NOT NULL
 GROUP BY DATE_TRUNC('month', published_at)
 ORDER BY month ASC;
-
 
 SELECT
     posts.title,
@@ -243,7 +252,6 @@ WHERE posts.published_at IS NOT NULL
 GROUP BY posts.id, posts.title
 ORDER BY posts.id ASC;
 
-
 SELECT
     tags.name,
     COUNT(DISTINCT posts.id) AS post_count
@@ -253,7 +261,6 @@ JOIN posts ON post_tags.post_id = posts.id
 WHERE posts.published_at IS NOT NULL
 GROUP BY tags.id, tags.name
 ORDER BY post_count DESC;
-
 
 SELECT
     posts.title,

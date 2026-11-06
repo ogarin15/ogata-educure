@@ -1,6 +1,45 @@
-# psql を起動(パスワードを聞かれるのでインストール時に設定したものを入力)
-psql -U <ユーザー名>
+# SQL Drill 45
 
-# psql のプロンプトが出たら、演習用 DB を作成
-postgres=# CREATE DATABASE sql_drill;
-postgres=# \q   -- psql を抜ける
+## 1. 演習用データベースを作成する
+
+ターミナルで PostgreSQL に接続します。
+
+```bash
+psql -U postgres
+```
+
+psql の画面で次を実行します。
+
+```sql
+CREATE DATABASE sql_drill;
+\q
+```
+
+## 2. テーブルとサンプルデータを作成する
+
+ターミナルで、このフォルダーに移動してから実行します。
+
+```bash
+psql -U postgres -d sql_drill -f 00-setup.sql
+```
+
+※ 同じデータベースにすでにテーブルを作成済みの場合は、重複作成エラーになります。
+演習データを最初から作り直す場合は、`sql_drill` データベースを削除して再作成してから実行してください。
+
+## 3. 回答SQLを実行する
+
+```bash
+psql -U postgres -d sql_drill -f answers.sql
+```
+
+各SELECT文の結果が順番に表示されます。
+
+## 4. 修正した問題
+
+- 問1〜5：指定された列・条件・並び順に合わせて修正
+- 問28：`likes` に存在しない `id` 列を参照しないように修正し、`NOT EXISTS` で「いいね0件」を判定
+- 問30：複数のいいね・コメントを結合しても件数が重複しないよう `COUNT(DISTINCT ...)` で集計
+- 問32：コメントを1件以上書いたユーザーを名前の重複なしで取得
+
+`00-setup.sql` はテーブル構造とサンプルデータを作成するファイルです。
+`answers.sql` は演習の回答SQLをまとめたファイルです。
