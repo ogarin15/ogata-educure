@@ -26,6 +26,36 @@ FROM users
 WHERE age IS NULL
 ORDER BY id ASC;
 
+-- 問6. 年齢が登録されているユーザーを年齢の昇順で取得
+SELECT id, name, age
+FROM users
+WHERE age IS NOT NULL
+ORDER BY age ASC;
+
+-- 問7. 年齢が登録されているユーザーを年齢の降順、同じ年齢なら名前順で取得
+SELECT id, name, age
+FROM users
+WHERE age IS NOT NULL
+ORDER BY age DESC, name ASC;
+
+-- 問8. 公開済み投稿のうち閲覧数上位3件を取得
+SELECT title, view_count
+FROM posts
+WHERE published_at IS NOT NULL
+ORDER BY view_count DESC
+LIMIT 3;
+
+-- 問9. 名前が S で始まるユーザーを取得
+SELECT id, name, email, age
+FROM users
+WHERE name LIKE 'S%';
+
+-- 問10. 年齢が20歳以上30歳以下のユーザーを年齢順で取得
+SELECT name, age
+FROM users
+WHERE age BETWEEN 20 AND 30
+ORDER BY age ASC;
+
 SELECT COUNT(*) AS total
 FROM users;
 
