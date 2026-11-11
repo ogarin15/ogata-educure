@@ -1,36 +1,41 @@
 import type { Request, Response } from "express";
 import { bookService } from "../services/bookService.js";
-import type { CreateBookInput } from "../services/bookService.js";
-import type { CreateBookBody } from "../schemas/bookSchema.js";
+import type { CreateBookBody, ListBooksQuery, ReplaceBookBody, UpdateBookBody } from "../schemas/bookSchema.js";
 import { HttpError } from "../middlewares/errorHandler.js";
 
-type ListQuery = { author?: string; limit?: number };
+type IdParams = { id: string };
 export const bookController = {
-  list(req: Request, res: Response): void {
-    const query = req.query as unknown as ListQuery;
+  list(_req: Request, res: Response): void {
+    const query = res.locals.validated.query as ListBooksQuery;
     res.status(200).json(bookService.list(query.author, query.limit));
   },
-  show(req: Request, res: Response): void {
-    const book = bookService.findById(req.params.id);
+  show(_req: Request<IdParams>, res: Response): void {
+    const { id } = res.locals.validated.params as IdParams;
+    const book = bookService.findById(id);
     if (!book) throw new HttpError(404, "NOT_FOUND", "book not found");
     res.status(200).json(book);
   },
-  create(req: Request<Record<string, never>, unknown, CreateBookBody>, res: Response): void {
-    const input: CreateBookInput = { title: req.body.title, author: req.body.author, publishedYear: req.body.publishedYear };
+  create(_req: Request, res: Response): void {
+    const input = res.locals.validated.body as CreateBookBody;
     res.status(201).json(bookService.create(input));
   },
-  remove(req: Request, res: Response): void {
-    if (!bookService.remove(req.params.id)) throw new HttpError(404, "NOT_FOUND", "book not found");
+  replace(_req: Request<IdParams>, res: Response): void {
+    const { id } = res.locals.validated.params as IdParams;
+    const input = res.locals.validated.body as ReplaceBookBody;
+    const book = bookService.replace(id, input);
+    if (!book) throw new HttpError(404, "NOT_FOUND", "book not found");
+    res.status(200).json(book);
+  },
+  update(_req: Request<IdParams>, res: Response): void {
+    const { id } = res.locals.validated.params as IdParams;
+    const partial = res.locals.validated.body as UpdateBookBody;
+    const book = bookService.update(id, partial);
+    if (!book) throw new HttpError(404, "NOT_FOUND", "book not found");
+    res.status(200).json(book);
+  },
+  remove(_req: Request<IdParams>, res: Response): void {
+    const { id } = res.locals.validated.params as IdParams;
+    if (!bookService.remove(id)) throw new HttpError(404, "NOT_FOUND", "book not found");
     res.status(204).end();
-  },
-  replace(req: Request, res: Response): void {
-    const replaced = bookService.replace(req.params.id, req.body as CreateBookInput);
-    if (!replaced) throw new HttpError(404, "NOT_FOUND", "book not found");
-    res.status(200).json(replaced);
-  },
-  update(req: Request, res: Response): void {
-    const updated = bookService.update(req.params.id, req.body as Partial<CreateBookInput>);
-    if (!updated) throw new HttpError(404, "NOT_FOUND", "book not found");
-    res.status(200).json(updated);
-  },
+  }
 };

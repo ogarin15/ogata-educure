@@ -1,66 +1,113 @@
-# MiniBooks API — フェーズ1〜5
+# MiniBooks API — Node.js基礎2課題
 
-Express + TypeScript の書籍API演習です。Router / Controller / Service / Middleware / Zod validation を分離しています。
+Express + TypeScript + ESM + Zodで作る書評SNS「MiniBooks」のAPIです。最終形（フェーズ5）までのファイルを1つのプロジェクトにまとめています。
 
 ## 起動方法
-1. Node.js 20.6以上（LTS推奨）とPostgreSQLをインストールします。
-2. VS Codeでこの `minibooks` フォルダを開きます。
-3. `.env` の `DATABASE_URL` を、自分のPostgreSQLのユーザー名・パスワード・DB名に合わせて変更します。例：`postgres://postgres:実際のパスワード@localhost:5432/minibooks`。`minibooks` データベースも事前に作成してください。
-4. 「ターミナル」→「新しいターミナル」で次を実行します。
+1. VS Codeで `minibooks` フォルダーを開く。
+2. Node.js 20.6以上（推奨22 LTS）を用意する。
+3. VS Codeの「ターミナル」→「新しいターミナル」を開く。
+4. 次を順番に実行する。
 
 ```bash
 npm install
 npm run dev
 ```
 
-DBに接続できた場合の起動表示：`[development] MiniBooks API listening on http://localhost:3000`
+`[development] MiniBooks API listening on http://localhost:3000` と表示されれば起動成功。停止は `Ctrl + C`。
 
-起動時に `SELECT 1` でDB接続を確認します。接続に失敗した場合は `failed to start:` を表示して終了し、HTTPサーバーは起動しません。Ctrl+C（SIGINT）またはSIGTERMを受けるとHTTPサーバーとDB接続プールを終了します。
+## フォルダー構成
+```text
+minibooks/
+├── package.json
+├── tsconfig.json
+├── .env
+├── .env.example
+├── .gitignore
+└── src/
+    ├── index.ts
+    ├── config.ts
+    ├── routes/books.ts
+    ├── controllers/bookController.ts
+    ├── services/bookService.ts
+    ├── schemas/bookSchema.ts
+    └── middlewares/
+        ├── logger.ts
+        ├── errorHandler.ts
+        ├── wrap.ts
+        └── validate.ts
+```
 
-型チェック：`npm run typecheck`
+## 動作確認（PowerShellはcurl.exeを使用）
+別ターミナルで実行する。サーバーは起動したままにする。
 
-## DBヘルスチェック・終了処理の確認
-1. `.env` の `DATABASE_URL` を実際のPostgreSQL接続情報に合わせます。
-2. `npm run dev` を実行し、DB接続に成功したときだけ `listening` が表示されることを確認します。
-3. `Ctrl+C` を押し、`[shutdown] closing server and pool` と `[shutdown] done` が表示されることを確認します。
-4. `.env` のパスワードを一時的に誤った値に変更し、`npm run dev` を実行します。`failed to start:` が表示され、`listening` が表示されずに終了することを確認します。
-5. 必ず `.env` のパスワードを正しい値に戻します。
-
-## URL一覧
-- `GET /api/v1/books`
-- `GET /api/v1/books?author=Orwell&limit=2`
-- `GET /api/v1/books/:id`
-- `POST /api/v1/books`
-- `PUT /api/v1/books/:id`
-- `PATCH /api/v1/books/:id`
-- `DELETE /api/v1/books/:id`
-- `GET /api/v1/books/:id/reviews`（課題の雛形：空配列）
-- `GET /api/v1/books/_throw`（500エラー確認用）
-- `GET /`（Welcome）
-
-古い `GET /books` は404になります。
-
-## 動作確認例（PowerShellでは curl.exe を使用）
-```powershell
-curl.exe -i http://localhost:3000/api/v1/books
+```bash
+curl.exe -i http://localhost:3000/
 curl.exe -i http://localhost:3000/api/v1/books/1
-curl.exe -i http://localhost:3000/api/v1/books/missing
+curl.exe -i http://localhost:3000/api/v1/books/999
+curl.exe -i "http://localhost:3000/api/v1/books?author=Orwell"
+curl.exe -i "http://localhost:3000/api/v1/books?limit=2"
 curl.exe -i http://localhost:3000/api/v1/books/1/reviews
-curl.exe -i -X POST -H "Content-Type: application/json" -d "{\"title\":\"Brave New World\",\"author\":\"Huxley\",\"publishedYear\":1932}" http://localhost:3000/api/v1/books
-curl.exe -i -X PUT -H "Content-Type: application/json" -d "{\"title\":\"Nineteen Eighty-Four\",\"author\":\"George Orwell\",\"publishedYear\":1949}" http://localhost:3000/api/v1/books/2
-curl.exe -i -X PATCH -H "Content-Type: application/json" -d "{\"title\":\"Le Petit Prince (改訳版)\"}" http://localhost:3000/api/v1/books/1
+```
+
+### POST（201 Created）
+```bash
+curl.exe -i -X POST -H "Content-Type: application/json" -d "{\"title\":\"Animal Farm\",\"author\":\"Orwell\",\"publishedYear\":1945}" http://localhost:3000/api/v1/books
+```
+
+### PUT（全更新）・PATCH（部分更新）
+```bash
+curl.exe -i -X PUT -H "Content-Type: application/json" -d "{\"title\":\"Nineteen Eighty-Four\",\"author\":\"George Orwell\",\"publishedYear\":1949}" http://localhost:3000/api/v1/books/1
+curl.exe -i -X PATCH -H "Content-Type: application/json" -d "{\"title\":\"Updated title\"}" http://localhost:3000/api/v1/books/1
+```
+
+### DELETE（204 No Content）
+```bash
 curl.exe -i -X DELETE http://localhost:3000/api/v1/books/2
-curl.exe -i http://localhost:3000/api/v1/books/_throw
-curl.exe -i -X OPTIONS -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: GET" http://localhost:3000/api/v1/books
+```
+
+### 422バリデーション・共通エラー
+```bash
 curl.exe -i -X POST -H "Content-Type: application/json" -d "{\"title\":\"\",\"author\":\"X\",\"publishedYear\":1949}" http://localhost:3000/api/v1/books
-curl.exe -i -X POST -H "Content-Type: application/json" -d "{\"title\":\"X\",\"author\":\"Y\",\"publishedYear\":\"abc\"}" http://localhost:3000/api/v1/books
 curl.exe -i "http://localhost:3000/api/v1/books?limit=101"
 curl.exe -i "http://localhost:3000/api/v1/books?limit=abc"
 curl.exe -i -X PATCH -H "Content-Type: application/json" -d "{\"publishedYear\":\"abc\"}" http://localhost:3000/api/v1/books/1
+curl.exe -i http://localhost:3000/api/v1/books/_throw
+curl.exe -i http://localhost:3000/this-route-does-not-exist
+```
+
+`/_throw` は500エラーを意図的に起こす確認用ルート。
+
+## HTTPメソッド・ステータスコード
+| メソッド | 用途 | 冪等性 |
+|---|---|---|
+| GET | 取得 | あり |
+| POST | 新規作成 | なし |
+| PUT | 全項目置換 | あり |
+| PATCH | 部分更新 | この実装では同じ値の再送で結果は同じ |
+| DELETE | 削除 | あり（2回目は404） |
+
+200=取得/更新成功、201=作成成功、204=削除成功（本文なし）、404=対象なし、422=入力値不正、500=想定外エラー。
+
+## 役割分担
+- routes：URLとControllerを結ぶ。
+- controllers：Requestを受け、Serviceの結果をHTTPレスポンスにする。
+- services：データ操作。ExpressのRequest/Responseを知らない。
+- schemas：Zodでbody / params / queryを検証する。
+- middlewares：logger、CORS、validate、errorHandlerなどの共通処理。
+
+## Git提出について
+このZIPにはフェーズ5までの完成コードを収録していますが、Setup+Q01〜Q10の途中状態のGitコミット履歴は含めていません。授業で各問題のコミットが必要な場合は、各段階の作業完了時に次のように記録してください。
+
+```bash
+git init
+git add .
+git commit -m "Setup: initialize MiniBooks project"
+# 各Qの作業完了後
+git add .
+git commit -m "Q01: add book detail endpoint"
 ```
 
 ## 注意
-- 書籍APIのデータは引き続きメモリ上のMapに保存されるため、サーバー再起動で初期データに戻ります。PostgreSQLはこの課題では起動時のヘルスチェックと終了処理に使用します。
-- `SUBMISSION.md` に各フェーズの振り返りと実際のテスト結果を記入してください。
-- `node_modules` と `.env` はGitにコミットしないでください。
-- 提出前に `npm install`、`npm run typecheck`、curlの動作確認を行ってください。
+- データはメモリ上の配列に保存するため、サーバー再起動で追加・更新・削除がリセットされる。
+- CORSは課題用に全Origin許可。実運用では許可Originを限定する。
+- `.env` はGitに登録しない。
